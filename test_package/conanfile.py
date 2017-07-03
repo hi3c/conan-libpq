@@ -8,7 +8,7 @@ username = os.getenv("CONAN_USERNAME", "hi3c")
 
 class LibpqTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    requires = "libpq/9.6.3@%s/%s" % (username, channel)
+    requires = "libpq/9.6.3_1@%s/%s" % (username, channel)
     generators = "cmake"
 
     def build(self):

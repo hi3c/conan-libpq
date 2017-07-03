@@ -1,11 +1,11 @@
-from conans import ConanFile, CMake, tools
+from conans import ConanFile, CMake, tools, AutoToolsBuildEnvironment
 import os
 import shutil
 
 
 class LibpqConan(ConanFile):
     name = "libpq"
-    version = "9.6.3"
+    version = "9.6.3_1"
     license = "<Put the package license here>"
     url = "<Package recipe repository url here, for issues about the package>"
     settings = "os", "compiler", "build_type", "arch"
@@ -28,18 +28,28 @@ class LibpqConan(ConanFile):
         shutil.copy("CMakeLists.txt", self.source_dir)
 
     def build(self):
-        cmake = CMake(self)
-        cmake.configure(source_dir=self.source_dir)
-        cmake.build()
+        if self.settings.os == "Windows":
+          cmake = CMake(self)
+          cmake.configure(source_dir=self.source_dir)
+          cmake.build()
+        else:
+          atbe = AutoToolsBuildEnvironment(self)
+          atbe.configure(configure_dir="postgresql-9.6.3", args=["--with-openssl", "--without-readline"])
+          atbe.make(["-C", os.path.join("src", "interfaces", "libpq")])
 
     def package(self):
         self.copy("*.h", src=self.source_dir, dst="include")
         self.copy("*.h", src=os.path.join("postgresql-9.6.3", "src", "include"), dst="include")
-        self.copy("*.h", src="include", dst="include")
-        self.copy("*.dll", dst="bin", src="bin")
+        self.copy("*.h", src="src/include", dst="include")
+
         self.copy("*.lib", dst="lib", src="lib")
-        self.copy("*.so", dst="lib", src="lib")
-        self.copy("*.a", dst="lib", src="lib")
+
+        if self.options.shared:
+            self.copy("*.dll", dst="bin", src="bin")
+            self.copy("*.so*", dst="lib", src="src/interfaces/libpq")
+            self.copy("*.dylib", dst="lib", src="src/interfaces/libpq")
+        else:
+            self.copy("*.a", dst="lib", src="lib")
 
     def package_info(self):
         if self.settings.os == "Windows":
